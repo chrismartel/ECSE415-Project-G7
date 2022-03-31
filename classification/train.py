@@ -3,12 +3,14 @@ from os import remove
 import sys, getopt
 import numpy as np
 import pickle
-import json
+import yaml
 from sklearn import svm
 from sklearn.ensemble import BaggingClassifier
 
 # Default parameters
 model_path_default = 'models/svm.sav'
+hyperparams_path_default = 'models/svm.yaml'
+
 
 # Dataset parameters
 positive_negative_ratio_default=1
@@ -34,10 +36,10 @@ def main(argv):
 
 
     model_path = model_path_default
-    json_path = None
+    hyperparams_path = None
 
     try:
-        opts, args = getopt.getopt(argv,"hp:j:",["model_path=","json_path="])
+        opts, args = getopt.getopt(argv,"p:y:",["model_path=","hyperparams_path="])
     except getopt.GetoptError:
         sys.exit(2)
     for opt, arg in opts:
@@ -46,24 +48,14 @@ def main(argv):
             sys.exit()
         elif opt in ("-p", "--model_path"):
             model_path = arg
-        elif opt in ("-j", "--json_path"):
+        elif opt in ("-y", "--hyperparams_path"):
             json_path = arg
 
-    if json_path is None:
-        positive_negative_ratio = positive_negative_ratio_default
-        min_intersection_ratio = min_intersection_ratio_default
-        use_external_vehicle_samples = use_external_vehicle_samples_default
-        number_of_external_vehicle_samples = number_of_external_vehicle_samples_default
-        input_shape = input_shape_default
-        orientations = orientations_default
-        pixels_per_cell = pixels_per_cell_default
-        cells_per_block = cells_per_block_default
-        C = C_default
-        bagging = bagging_default
-        n_estimators = n_estimators_default
+    if hyperparams_path is None:
+        hyperparams_path = hyperparams_path_default
     else:
-        with open(json_path, "r") as json_file:
-            hyperparameters = json.load(json_file)
+        with open(hyperparams_path, "r") as yaml_file:
+            hyperparameters = yaml.load(yaml_file)
 
         # Get model hyperparameters
         positive_negative_ratio = hyperparameters['dataset']['positive_negative_ratio']
@@ -71,10 +63,10 @@ def main(argv):
         use_external_vehicle_samples = hyperparameters['dataset']['use_external_vehicle_samples']
         number_of_external_vehicle_samples = hyperparameters['dataset']['number_of_external_vehicle_samples']
         
-        input_shape = hyperparameters['preprocessing']['input_shape']
+        input_shape = hyperparameters['preprocessing']['input_shape']['y'], hyperparameters['preprocessing']['input_shape']['x']
         orientations = hyperparameters['preprocessing']['orientations']
-        pixels_per_cell = hyperparameters['preprocessing']['pixels_per_cell']
-        cells_per_block = hyperparameters['preprocessing']['cells_per_block']
+        pixels_per_cell = hyperparameters['preprocessing']['pixels_per_cell']['y'], hyperparameters['preprocessing']['pixels_per_cell']['x']
+        cells_per_block = hyperparameters['preprocessing']['cells_per_block']['y'], hyperparameters['preprocessing']['cells_per_block']['x']
         
         C = hyperparameters['svm']['C']
         bagging = hyperparameters['svm']['bagging']

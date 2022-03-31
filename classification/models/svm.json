@@ -1,1 +1,0 @@
-{"dataset": {"positive_negative_ratio": 1, "min_intersection_ratio": 0.8, "use_external_vehicle_samples": true, "number_of_external_vehicle_samples": 800}, "preprocessing": {"input_shape": [80, 128], "orientations": 9, "pixels_per_cell": [12, 16], "cells_per_block": [4, 4]}, "svm": {"C": 10, "bagging": false, "n_estimators": 1}}

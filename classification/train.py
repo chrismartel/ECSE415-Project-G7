@@ -8,8 +8,8 @@ from sklearn import svm
 from sklearn.ensemble import BaggingClassifier
 
 # Default parameters
-model_path_default = 'models/svm.sav'
-hyperparams_path_default = 'models/svm.yaml'
+model_path_default = 'models/svm_default.sav'
+hyperparams_path_default = 'models/svm_default.yaml'
 
 
 # Dataset parameters

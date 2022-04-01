@@ -294,7 +294,9 @@ def build_dataset(positive_negative_ratio=1, min_intersection_ratio=0.8, use_ext
   return sequences
 
 
-def dataset_statistics(sequences, statistic_types):
+import numpy as np
+
+def dataset_statistics(sequences, statistic_types, number_of_banks=5):
   '''
       Collect width, height, and aspect ratios statistics from image dataset.
 
@@ -319,47 +321,39 @@ def dataset_statistics(sequences, statistic_types):
   # compute statistics on full image dataset
   if 'aspect_ratio' in statistic_types:
     aspect_ratios = np.zeros(number_of_samples)
-    min_aspect_ratio, max_aspect_ratio = np.iinfo(np.int32).max, 0
 
   if 'width' in statistic_types:
     widths = np.zeros(number_of_samples)
-    min_width, max_width = np.iinfo(np.int32).max, 0
 
   if 'height' in statistic_types:
     heights = np.zeros(number_of_samples)
-    min_height, max_height = np.iinfo(np.int32).max, 0
 
   for seq in sequences.values():
     for i, sample in enumerate(seq):
       if 'width' in statistic_types:
         widths[i] = sample[0].shape[1]
-        min_width = widths[i] if widths[i] < min_width else min_width
-        max_width = widths[i] if widths[i] > max_width else max_width
 
       if 'height' in statistic_types:
         heights[i] = sample[0].shape[0]
-        min_height = heights[i] if heights[i] < min_height else min_height
-        max_height = widths[i] if widths[i] > max_height else max_height
 
       if 'aspect_ratio' in statistic_types:
         aspect_ratios[i] = heights[i] / float(widths[i])
-        min_aspect_ratio = aspect_ratios[i] if aspect_ratios[i] < min_aspect_ratio else min_aspect_ratio
-        max_aspect_ratio = aspect_ratios[i] if aspect_ratios[i] > max_aspect_ratio else max_aspect_ratio
       
       if 'class_distribution' in statistic_types:
         class_count[sample[1]] += 1
 
   stats = dict()
   if 'width' in statistic_types:
-    stats['width'] = (min_width, max_width)
-  
+    stats['widths'] = widths    
+
   if 'height' in statistic_types:
-    stats['height'] = (min_height, max_height)
+    stats['heights'] = heights
 
   if 'aspect_ratio' in statistic_types:
-    stats['aspect_ratio'] = (min_aspect_ratio, max_aspect_ratio)
-
+    stats['aspect_ratios'] = aspect_ratios
+          
   if 'class_distribution' in statistic_types:
     stats['class_distribution'] = class_count
   
   return stats
+

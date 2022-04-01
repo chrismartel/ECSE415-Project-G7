@@ -211,7 +211,7 @@ def build_dataset(positive_negative_ratio=1, min_intersection_ratio=0.8, use_ext
 
     for i in range(number_of_external_vehicle_samples):
       img_id = inds[i]
-      img = cv.imread("cars_test/{img_id:05d}.jpg".format(img_id=img_id))
+      img = cv.imread("cars_test/{img_id:05d}.jpg".format(img_id=img_id+1))
 
       random_sequence_id = choice(list(range(number_of_sequences)))
       sequences[random_sequence_id].append((img,1))

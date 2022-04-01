@@ -11,17 +11,26 @@ from random import randint, shuffle, choice
 # -------------------------------------------------------- #
 
 def download_datasets():
-  # McGill ECSE415 Provided Image Sequences
-  cmds = ['wget -nc -O dataset.zip https://mcgill-my.sharepoint.com/:u:/g/personal/raghav_mehta_mail_mcgill_ca/EVEvhY9_jyVEk2uSZ8wZhFYBQ58C57I7ZB55jBocKwB5Jg?download=1', 'unzip dataset.zip', 'rm dataset.zip']
+  current_path = os.getcwd()
+  if os.path.exists(current_path+"/dataset"):
+    print("Already downloaded sequence dataset")
 
-  for cmd in cmds:
-    os.system(cmd)
+  else:
+    # McGill ECSE415 Provided Image Sequences
+    cmds = ['wget -nc -O dataset.zip https://mcgill-my.sharepoint.com/:u:/g/personal/raghav_mehta_mail_mcgill_ca/EVEvhY9_jyVEk2uSZ8wZhFYBQ58C57I7ZB55jBocKwB5Jg?download=1', 'unzip dataset.zip', 'rm dataset.zip']
 
-  # Stanford University Cars Dataset
-  cmds = ['wget -nc http://ai.stanford.edu/~jkrause/car196/cars_test.tgz', 'tar -xf cars_test.tgz', 'rm cars_test.tgz']
+    for cmd in cmds:
+      os.system(cmd)
 
-  for cmd in cmds:
-    os.system(cmd)
+  if os.path.exists(current_path+"/cars_test"):
+    print("Already downloaded cars dataset")
+    
+  else:
+    # Stanford University Cars Dataset
+    cmds = ['wget -nc http://ai.stanford.edu/~jkrause/car196/cars_test.tgz', 'tar -xf cars_test.tgz', 'rm cars_test.tgz']
+
+    for cmd in cmds:
+      os.system(cmd)
 
 def remove_datasets():
   cmds = list()

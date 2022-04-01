@@ -1,5 +1,6 @@
 #!/usr/bin/python
 from os import remove
+import os
 import sys, getopt
 import numpy as np
 import pickle
@@ -10,6 +11,7 @@ from sklearn.ensemble import BaggingClassifier
 # Default parameters
 model_path_default = 'models/svm_default.sav'
 hyperparams_path_default = 'models/svm_default.yaml'
+current_path = os.getcwd()
 
 
 # Dataset parameters
@@ -34,7 +36,7 @@ n_estimators_default = 1
 # -j --json_path: if provided, get hyperparameters from json file. Else use default parameters
 def main(argv):
 
-
+    for p in sys.path: print(p)
     model_path = model_path_default
     hyperparams_path = None
 
@@ -49,32 +51,34 @@ def main(argv):
         elif opt in ("-p", "--model_path"):
             model_path = arg
         elif opt in ("-y", "--hyperparams_path"):
-            json_path = arg
+            yml_path = arg
+    
+    if yml_path is not None:
+      hyperparams_path = yml_path
 
     if hyperparams_path is None:
         hyperparams_path = hyperparams_path_default
-    else:
-        with open(hyperparams_path, "r") as yaml_file:
-            hyperparameters = yaml.load(yaml_file)
 
-        # Get model hyperparameters
-        positive_negative_ratio = hyperparameters['dataset']['positive_negative_ratio']
-        min_intersection_ratio = hyperparameters['dataset']['min_intersection_ratio']
-        use_external_vehicle_samples = hyperparameters['dataset']['use_external_vehicle_samples']
-        number_of_external_vehicle_samples = hyperparameters['dataset']['number_of_external_vehicle_samples']
-        
-        input_shape = hyperparameters['preprocessing']['input_shape']['y'], hyperparameters['preprocessing']['input_shape']['x']
-        orientations = hyperparameters['preprocessing']['orientations']
-        pixels_per_cell = hyperparameters['preprocessing']['pixels_per_cell']['y'], hyperparameters['preprocessing']['pixels_per_cell']['x']
-        cells_per_block = hyperparameters['preprocessing']['cells_per_block']['y'], hyperparameters['preprocessing']['cells_per_block']['x']
-        
-        C = hyperparameters['svm']['C']
-        bagging = hyperparameters['svm']['bagging']
-        n_estimators = hyperparameters['svm']['n_estimators']
+    with open(hyperparams_path, "r") as yaml_file:
+        hyperparameters = yaml.load(yaml_file)
 
+    # Get model hyperparameters
+    positive_negative_ratio = hyperparameters['dataset']['positive_negative_ratio']
+    min_intersection_ratio = hyperparameters['dataset']['min_intersection_ratio']
+    use_external_vehicle_samples = hyperparameters['dataset']['use_external_vehicle_samples']
+    number_of_external_vehicle_samples = hyperparameters['dataset']['number_of_external_vehicle_samples']
+    
+    input_shape = hyperparameters['preprocessing']['input_shape']['y'], hyperparameters['preprocessing']['input_shape']['x']
+    orientations = hyperparameters['preprocessing']['orientations']
+    pixels_per_cell = hyperparameters['preprocessing']['pixels_per_cell']['y'], hyperparameters['preprocessing']['pixels_per_cell']['x']
+    cells_per_block = hyperparameters['preprocessing']['cells_per_block']['y'], hyperparameters['preprocessing']['cells_per_block']['x']
+    
+    C = hyperparameters['svm']['C']
+    bagging = hyperparameters['svm']['bagging']
+    n_estimators = hyperparameters['svm']['n_estimators']
 
     # import python file tools from repo at runtime
-    sys.path.insert(1, '/tools')
+    sys.path.insert(0, current_path + '/tools')
     from data import build_dataset, download_datasets, remove_datasets
     from preprocessing import preprocess_sequences
 
@@ -82,7 +86,9 @@ def main(argv):
 
     # download & build dataset
     download_datasets()
+    print("build dataset")
     sequences = build_dataset(positive_negative_ratio=positive_negative_ratio,min_intersection_ratio=min_intersection_ratio, use_external_vehicle_samples=use_external_vehicle_samples, number_of_external_vehicle_samples=number_of_external_vehicle_samples)
+    print("remove dataset")
     remove_datasets()
 
     # Preprocess

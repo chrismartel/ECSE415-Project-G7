@@ -10,7 +10,7 @@ from sklearn.ensemble import BaggingClassifier
 
 # Default parameters
 model_path_default = 'models/svm_default.sav'
-hyperparams_path_default = 'models/svm_default.yaml'
+hyperparams_path_default = 'models/configs/svm_default.yaml'
 current_path = os.getcwd()
 
 

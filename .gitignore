@@ -1,3 +1,7 @@
 dataset/
 cars_test/
+
+vehicles/
+non-vehicles/
+
 models/

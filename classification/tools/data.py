@@ -169,7 +169,7 @@ def area(r):
 
 
 
-def build_dataset(positive_negative_ratio=1, min_intersection_ratio=0.8, use_external_vehicle_samples=False, number_of_external_vehicle_samples=500):
+def build_dataset_using_random_patches(positive_negative_ratio=1, min_intersection_ratio=0.8, use_external_vehicle_samples=False, number_of_external_vehicle_samples=500):
   '''
       Build a dataset from provided image sequences and other external datasets. The built dataset consists of a 
       dictionary. Each key corresponds to a sequence of images. The image sequences can be split and used for training.
@@ -295,6 +295,130 @@ def build_dataset(positive_negative_ratio=1, min_intersection_ratio=0.8, use_ext
 
 
 import numpy as np
+
+
+def build_dataset_from_sliding_window(min_intersection_ratio=0.8, number_of_positive_samples=500):
+  '''
+      Build a dataset from provided image sequences and other external datasets. The built dataset consists of a 
+      dictionary. Each key corresponds to a sequence of images. The image sequences can be split and used for training.
+
+      min_intersection_ratio: The minimum ratio of a random generated patch vs. a vehicle bbox to be considered a vehicle
+      number_of_positive: indicates number of vehicle samples to add to dataset
+
+      return sequences, a dictionary containing list of images in each sequence.
+  '''
+
+  # Build sequence dictionary
+  number_of_sequences = 4
+  sequences = dict()
+  for i in range(number_of_sequences):
+    sequences[i] = list()
+
+  positive_samples_count = 0
+
+
+  # -------------------- Positive Train Set -------------------- #
+
+  for seq_id in range(number_of_sequences):
+    visited_ids = list() # keep track of vehicle ids to avoid adding the same vehicle multiple times
+
+    bboxes = parse('dataset/000{seq_id}.txt'.format(seq_id=seq_id))
+
+    # Get positive samples from provided bounding boxes
+    for frame_id, frame_bboxes in bboxes.items():
+      img = cv.imread('dataset/000{seq_id}/{frame_id:06d}.png'.format(seq_id=seq_id, frame_id=frame_id))
+      img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
+
+      for bbox in frame_bboxes:
+        id, x1, y1, x2, y2 = bbox.astype('int32')
+
+        if id not in visited_ids:
+          visited_ids.append(id)
+          bbox_img = img[y1:y2,x1:x2]
+          sequences[seq_id].append((bbox_img,1))
+          positive_samples_count += 1
+
+  # Add Car Images from Stanford University dataset
+  external_dataset_length = len(os.listdir('cars_test'))
+
+  inds = list(range(external_dataset_length))
+  shuffle(inds)
+
+  for i in len(range(positive_samples_count, number_of_positive_samples)):
+    img_id = inds[i]
+    img = cv.imread("cars_test/{img_id:05d}.jpg".format(img_id=img_id+1))
+
+    random_sequence_id = choice(list(range(number_of_sequences)))
+    sequences[random_sequence_id].append((img,1))
+
+  # -------------------- Negative Train Set -------------------- #
+
+  # Random patches constraints
+  # minimum_bbox_h, maximum_bbox_h = 0.1, 0.5
+  # minimum_bbox_w, maximum_bbox_w = 0.1, 0.5
+  # max_diff_width_height = 30
+
+  # negative_samples_set_length = int((1 / positive_negative_ratio) * number_of_positive_samples)
+  # number_of_negative_samples_per_sequence = int(negative_samples_set_length/number_of_sequences)
+
+  for seq_id in range(number_of_sequences):
+
+    bboxes = parse('dataset/000{seq_id}.txt'.format(seq_id=seq_id))
+    # Generate negative samples
+    # for sample in range(number_of_negative_samples_per_sequence):
+
+    frame_id = choice(list(bboxes.keys()))
+    frame_bboxes = bboxes[frame_id]
+    
+    img = cv.imread('dataset/000{seq_id}/{frame_id:06d}.png'.format(seq_id=seq_id, frame_id=frame_id))
+    img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
+
+    # Generate valid dimensions
+    # while(True):
+    #   random_y1 = randint(0,img.shape[0])
+    #   random_y2 = randint(random_y1,img.shape[0])
+
+    #   random_x1 = randint(0,img.shape[1])
+    #   random_x2 = randint(random_x1,img.shape[1])
+
+    #   # validate dimensions
+    #   if random_y2 - random_y1 < minimum_bbox_h*img.shape[0] or random_y2 - random_y1 > maximum_bbox_h*img.shape[0] :
+    #     continue
+    #   if random_x2 - random_x1 < minimum_bbox_w*img.shape[1] or random_x2 - random_x1 > maximum_bbox_w*img.shape[1] :
+    #     continue
+
+    #   if abs((random_x2 - random_x1) - (random_y2 - random_y1)) > max_diff_width_height:
+    #     continue
+    #   break
+
+    # TODO apply sliding window
+    sliding_y1, sliding_y2, sliding_x1, sliding_x2 = 0,0,0,0
+    sliding_bbox = ()
+    sliding_area = area(sliding_bbox)
+
+    # check intersection with vehicles
+    is_vehicle = 0
+    for (id, x1,y1,x2,y2) in frame_bboxes:
+      vehicle_bbox = (x1,y1,x2,y2)
+      vehicle_area = area(vehicle_bbox)
+
+      intersection_bbox = intersection(vehicle_bbox, sliding_bbox)
+      
+      # no intersection
+      if intersection_bbox is None:
+        continue
+      else:
+        intersection_area = area(intersection_bbox)
+        # check for minimal intersection
+        if intersection_area/vehicle_area > min_intersection_ratio and intersection_area/sliding_area > min_intersection_ratio:       
+          is_vehicle = 1
+          break
+
+    random_bbox_img = img[sliding_y1:sliding_y2,sliding_x1:sliding_x2]
+    if is_vehicle == 0:
+      sequences[seq_id].append((random_bbox_img,is_vehicle))
+
+  return sequences
 
 def dataset_statistics(sequences, statistic_types, number_of_banks=5):
   '''

@@ -168,8 +168,8 @@ def area(r):
   return (r[2]-r[0])*(r[3]-r[1])
 
 
-
-def build_dataset_using_random_patches(positive_negative_ratio=1, min_intersection_ratio=0.8, use_external_vehicle_samples=False, number_of_external_vehicle_samples=500):
+# OLD VERSION
+def build_dataset(positive_negative_ratio=1, min_intersection_ratio=0.8, use_external_vehicle_samples=False, number_of_external_vehicle_samples=500):
   '''
       Build a dataset from provided image sequences and other external datasets. The built dataset consists of a 
       dictionary. Each key corresponds to a sequence of images. The image sequences can be split and used for training.
@@ -297,6 +297,7 @@ def build_dataset_using_random_patches(positive_negative_ratio=1, min_intersecti
 import numpy as np
 
 
+# NEW VERSION
 def build_dataset_from_sliding_window(min_intersection_ratio=0.8, number_of_positive_samples=500):
   '''
       Build a dataset from provided image sequences and other external datasets. The built dataset consists of a 

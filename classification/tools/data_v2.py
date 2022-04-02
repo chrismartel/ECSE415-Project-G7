@@ -78,7 +78,6 @@ def build_dataset_v2(positive_negative_ratio=1, number_of_positive_samples=2000,
   '''
 
   number_of_negative_samples = int(1.0/positive_negative_ratio)*number_of_positive_samples
-  print(number_of_negative_samples)
 
   # N x H x W x C
   N = number_of_positive_samples+number_of_negative_samples

@@ -77,7 +77,7 @@ def build_dataset_v2(positive_negative_ratio=1, number_of_positive_samples=2000,
       W is the images width and C is the number of channels. labels correspond to the labels associated with each image
   '''
 
-  number_of_negative_samples = int(1.0/positive_negative_ratio)*number_of_positive_samples
+  number_of_negative_samples = int((1.0/positive_negative_ratio)*number_of_positive_samples)
 
   # N x H x W x C
   N = number_of_positive_samples+number_of_negative_samples

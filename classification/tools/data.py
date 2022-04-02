@@ -10,36 +10,56 @@ from random import randint, shuffle, choice
 # ------------- Download and Delete Datasets ------------- #
 # -------------------------------------------------------- #
 
-def download_datasets():
-  current_path = os.getcwd()
-  if os.path.exists(current_path+"/dataset"):
-    print("Already downloaded sequence dataset")
+import os
 
-  else:
-    # McGill ECSE415 Provided Image Sequences
-    cmds = ['wget -nc -O dataset.zip https://mcgill-my.sharepoint.com/:u:/g/personal/raghav_mehta_mail_mcgill_ca/EVEvhY9_jyVEk2uSZ8wZhFYBQ58C57I7ZB55jBocKwB5Jg?download=1', 'unzip dataset.zip', 'rm dataset.zip']
+def download_datasets(datasets):
 
-    for cmd in cmds:
-      os.system(cmd)
+  cmds = list()
+  # McGill ECSE415 Provided Image Sequences
+  if 'ecse415' in datasets and not os.path.exists("dataset"):
+    cmds.append('wget -nc -O dataset.zip https://mcgill-my.sharepoint.com/:u:/g/personal/raghav_mehta_mail_mcgill_ca/EVEvhY9_jyVEk2uSZ8wZhFYBQ58C57I7ZB55jBocKwB5Jg?download=1')
+    cmds.append('unzip dataset.zip')
+    cmds.append('rm dataset.zip')
 
-  if os.path.exists(current_path+"/cars_test"):
-    print("Already downloaded cars dataset")
-    
-  else:
-    # Stanford University Cars Dataset
-    cmds = ['wget -nc http://ai.stanford.edu/~jkrause/car196/cars_test.tgz', 'tar -xf cars_test.tgz', 'rm cars_test.tgz']
+  # Stanford University Cars Dataset
+  if 'stanford' in datasets and not os.path.exists("cars_test"):
+    cmds.append('wget -nc http://ai.stanford.edu/~jkrause/car196/cars_test.tgz')
+    cmds.append('tar -xf cars_test.tgz')
+    cmds.append('rm cars_test.tgz')
 
-    for cmd in cmds:
-      os.system(cmd)
+  # Udacity Vehicles and Non-Vehicles Dataset
+  if 'udacity' in datasets:
+    if not os.path.exists("vehicles"):
+      cmds.append('wget https://s3.amazonaws.com/udacity-sdc/Vehicle_Tracking/vehicles.zip')
+      cmds.append('unzip vehicles.zip')
+      cmds.append('rm vehicles.zip')
 
-def remove_datasets():
+    if not os.path.exists("non-vehicles"):
+      cmds.append('wget https://s3.amazonaws.com/udacity-sdc/Vehicle_Tracking/non-vehicles.zip')
+      cmds.append('unzip non-vehicles.zip')
+      cmds.append('rm non-vehicles.zip')
+
+    if os.path.exists("__MACOSX"):
+      cmds.append('rm -r __MACOSX')
+
+  for cmd in cmds:
+    os.system(cmd)
+
+def remove_datasets(datasets):
   cmds = list()
   
-  if os.path.exists("dataset"):
+  if 'ecse415' in datasets and os.path.exists("dataset"):
     cmds.append('rm -r dataset')
 
-  if os.path.exists("cars_test"):
+  if 'stanford' in datasets and os.path.exists("cars_test"):
     cmds.append('rm -r cars_test')
+
+  if 'udacity' in datasets:
+    if os.path.exists("vehicles"):
+      cmds.append('rm -r vehicles')
+
+    if os.path.exists("non-vehicles"):
+      cmds.append('rm -r non-vehicles')
 
   for cmd in cmds:
     os.system(cmd)

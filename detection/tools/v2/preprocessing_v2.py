@@ -3,10 +3,16 @@ from skimage.feature import hog
 import numpy as np
 from random import shuffle
 import time
+import cv2
 
 
 def preprocess_images_v2(
-    imgs, orientations, pixels_per_cell, cells_per_block, preprocessing_time=False
+    imgs,
+    orientations,
+    pixels_per_cell,
+    cells_per_block,
+    preprocessing_time=False,
+    compute_spatial_features=True,
 ):
     """
     Preprocess an image.
@@ -30,7 +36,7 @@ def preprocess_images_v2(
         start = time.time()
 
         # Min-max normalization
-        min, max = np.min(img), np.max(img)
+        min, max = 0, 255
         img = (img - min) / (max - min)
 
         # Extract HoG features
@@ -44,8 +50,15 @@ def preprocess_images_v2(
             visualize=False,
         )
 
+        if compute_spatial_features:
+            small_img = cv2.resize(img, (16, 16))
+            spatial_features = small_img.flatten()
+            feature = np.concatenate((feature, spatial_features), axis=-1)
+
+        # inti features array
         if features is None:
             features = np.zeros((N, len(feature)))
+
         features[i] = feature
         end = time.time()
         exec_times_ms[i] = (end - start) * 1000
@@ -55,7 +68,7 @@ def preprocess_images_v2(
     ret.append(features)
 
     if preprocessing_time:
-        ret.append(exec_times_ms)
+        ret.append(np.mean(exec_times_ms))
 
     if len(ret) == 1:
         return ret[0]

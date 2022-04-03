@@ -4,57 +4,72 @@ import numpy as np
 from random import shuffle
 import time
 
-def preprocess_images_v2(imgs, orientations, pixels_per_cell, cells_per_block, preprocessing_time=False, compute_spatial_features=False):
-  '''
-  Preprocess an image.
 
-  img: numpy array of shape (N, H,W,C)
-  orientations: int - number of orientation bins in hog feature computations
-  pixels_per_cells: tuple (h,w) - number of pixels per cell in hog feature computation
-  cells_per_block: tuple (h,w) - number of cells per block in hog feature computation
-  preprocessing_time: indicates if preprocessing time must be computed and returned
+def preprocess_images_v2(
+    imgs,
+    orientations,
+    pixels_per_cell,
+    cells_per_block,
+    preprocessing_time=False,
+    compute_spatial_features=False,
+):
+    """
+    Preprocess an image.
 
-  return (features, (optional)hog_img, (optional)time) - HoG features extracted from the images,
-  the HoG images, and the preprocessing times in ms
-  '''
-  N = imgs.shape[0]
-  exec_times_ms = np.zeros(imgs.shape[0])
+    img: numpy array of shape (N, H,W,C)
+    orientations: int - number of orientation bins in hog feature computations
+    pixels_per_cells: tuple (h,w) - number of pixels per cell in hog feature computation
+    cells_per_block: tuple (h,w) - number of cells per block in hog feature computation
+    preprocessing_time: indicates if preprocessing time must be computed and returned
 
-  features = None
+    return (features, (optional)hog_img, (optional)time) - HoG features extracted from the images,
+    the HoG images, and the preprocessing times in ms
+    """
+    N = imgs.shape[0]
+    exec_times_ms = np.zeros(imgs.shape[0])
 
-  for i in range(imgs.shape[0]):
-    img = imgs[i]
-    start = time.time()
+    features = None
 
-    # Min-max normalization
-    min, max = 0, 255
-    img = (img - min) / (max - min)
+    for i in range(imgs.shape[0]):
+        img = imgs[i]
+        start = time.time()
 
-    # Extract HoG features
-    feature = hog(img, orientations=orientations, pixels_per_cell = pixels_per_cell, cells_per_block=cells_per_block, feature_vector=True, multichannel=True, visualize=False)
-    
+        # Min-max normalization
+        min, max = 0, 255
+        img = (img - min) / (max - min)
 
-    if compute_spatial_features:
-      small_img = resize(img,(16,16))
-      spatial_features = small_img.flatten()
-      feature = np.concatenate((feature, spatial_features), axis=-1)
+        # Extract HoG features
+        feature = hog(
+            img,
+            orientations=orientations,
+            pixels_per_cell=pixels_per_cell,
+            cells_per_block=cells_per_block,
+            feature_vector=True,
+            multichannel=True,
+            visualize=False,
+        )
 
-    # inti features array
-    if features is None:
-      features = np.zeros((N, len(feature)))
+        if compute_spatial_features:
+            small_img = resize(img, (16, 16))
+            spatial_features = small_img.flatten()
+            feature = np.concatenate((feature, spatial_features), axis=-1)
 
-    features[i] = feature
-    end = time.time()
-    exec_times_ms[i] = (end - start) * 1000
+        # inti features array
+        if features is None:
+            features = np.zeros((N, len(feature)))
 
-  # return package
-  ret = list()
-  ret.append(features)
+        features[i] = feature
+        end = time.time()
+        exec_times_ms[i] = (end - start) * 1000
 
-  if preprocessing_time:
-    ret.append(np.mean(exec_times_ms))
+    # return package
+    ret = list()
+    ret.append(features)
 
-  if len(ret) == 1:
-    return ret[0]
-  else:
-    return tuple(ret)
+    if preprocessing_time:
+        ret.append(np.mean(exec_times_ms))
+
+    if len(ret) == 1:
+        return ret[0]
+    else:
+        return tuple(ret)

@@ -2,7 +2,7 @@ import pickle
 import json
 import yaml
 
-def train_and_save_model(path, version='v2', save_model=True, save_config=True, positive_negative_ratio=1, min_intersection_ratio=0.8, use_external_vehicle_samples=True, number_of_positive_samples=800, input_shape=(64,64),orientations=9, pixels_per_cell=(12,16),cells_per_block=(4,4),C=1, bagging=False, n_estimators=10):
+def train_and_save_model(path, version='v2', save_model=True, save_config=True, positive_negative_ratio=1, min_intersection_ratio=0.8, number_of_positive_samples=800, input_shape=(64,64), compute_spatial_features=compute_spatial_features, orientations=9, pixels_per_cell=(12,16),cells_per_block=(4,4),C=1, bagging=False, n_estimators=10):
   '''
     Train a svm classifier with HoG features and save it.
 
@@ -17,9 +17,9 @@ def train_and_save_model(path, version='v2', save_model=True, save_config=True, 
 
   if version == 'v1':
     # Build Dataset
-    sequences = build_dataset(positive_negative_ratio=positive_negative_ratio,min_intersection_ratio=min_intersection_ratio, use_external_vehicle_samples=use_external_vehicle_samples, number_of_positive_samples=number_of_positive_samples)
+    sequences = build_dataset(positive_negative_ratio=positive_negative_ratio,min_intersection_ratio=min_intersection_ratio,  number_of_positive_samples=number_of_positive_samples)
     # Preprocess
-    features, labels = preprocess_sequences(sequences, input_shape, orientations, pixels_per_cell, cells_per_block)
+    features, labels = preprocess_sequences(sequences, input_shape, orientations, pixels_per_cell, cells_per_block, compute_spatial_features=compute_spatial_features)
 
     # Build Train set: sequences 0, 1 and 2
     x_train, y_train = None, None
@@ -71,7 +71,6 @@ def train_and_save_model(path, version='v2', save_model=True, save_config=True, 
 
     data['dataset']['positive_negative_ratio'] = positive_negative_ratio
     data['dataset']['min_intersection_ratio'] = min_intersection_ratio
-    data['dataset']['use_external_vehicle_samples'] = use_external_vehicle_samples
     data['dataset']['number_of_positive_samples'] = number_of_positive_samples
     
     data['preprocessing']['input_shape'] = dict()

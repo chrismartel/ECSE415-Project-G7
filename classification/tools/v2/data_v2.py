@@ -61,11 +61,6 @@ def remove_datasets(datasets):
   for cmd in cmds:
     os.system(cmd)
 
-# -------------------------------------------------------- #
-# ------------- Build Dataset ---------------------------- #
-# -------------------------------------------------------- #
-
-
 def build_dataset_v2(positive_negative_ratio=1, number_of_positive_samples=2000, resize_shape=(64,64)):
   '''
       Build a dataset from udacity vehicle/non-vehicle dataset.
@@ -95,28 +90,40 @@ def build_dataset_v2(positive_negative_ratio=1, number_of_positive_samples=2000,
   vehicle_db_main_path = 'vehicles/'
   vehicle_db_subpaths= ['GTI_Far','GTI_Left','GTI_MiddleClose','GTI_Right','KITTI_extracted']
 
+  samples_available = 0
+
   vehicle_db_dict = dict()
   for db in vehicle_db_subpaths:
     vehicle_db_dict[db] = dict()
-    vehicle_db_dict[db]['visited'] = list() # keep track of visited ids
     vehicle_db_dict[db]['length'] = len(os.listdir(vehicle_db_main_path+db))
+    samples_available += vehicle_db_dict[db]['length']
+
+    inds = list(range(vehicle_db_dict[db]['length']))
+    shuffle(inds)
+    vehicle_db_dict[db]['inds'] = inds
+    vehicle_db_dict[db]['i'] = 0
+
+  if samples_available < number_of_negative_samples:
+      print("Error: {av} positive samples available, but {req} required.".format(av=samples_available, req=number_of_negative_samples))
+      sys.exit(-1)
 
   for i in range(number_of_positive_samples):
-
-    while (True):
+    while(True):
       random_db = choice(list(vehicle_db_dict.keys()))
-      random_id = randint(0,vehicle_db_dict[random_db]['length']-1)
+
+      if vehicle_db_dict[random_db]['i'] >= vehicle_db_dict[random_db]['length']:
+        continue
+
+      random_id = vehicle_db_dict[random_db]['inds'][vehicle_db_dict[random_db]['i']]
+      vehicle_db_dict[random_db]['i'] += 1
 
       filepath = vehicle_db_main_path + random_db + '/' + os.listdir(vehicle_db_main_path+random_db)[random_id]
       if not filepath.endswith('.png'):
         continue
-      if random_id in vehicle_db_dict[random_db]['visited']:
-        continue
       break
-    vehicle_db_dict[random_db]['visited'].append(random_id)
+
     img = cv.imread(vehicle_db_main_path + random_db + '/' + os.listdir(vehicle_db_main_path+random_db)[random_id])
-    if img is None:
-      print(vehicle_db_main_path + random_db + '/' + os.listdir(vehicle_db_main_path+random_db)[random_id])
+
     img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
 
     img = resize(img, resize_shape)
@@ -130,28 +137,42 @@ def build_dataset_v2(positive_negative_ratio=1, number_of_positive_samples=2000,
   non_vehicle_db_main_path = 'non-vehicles/'
   non_vehicle_db_subpaths= ['Extras','GTI']
 
+  samples_available = 0
+
+
   non_vehicle_db_dict = dict()
   for db in non_vehicle_db_subpaths:
     non_vehicle_db_dict[db] = dict()
-    non_vehicle_db_dict[db]['visited'] = list() # keep track of visited ids
     non_vehicle_db_dict[db]['length'] = len(os.listdir(non_vehicle_db_main_path+db))
 
-  for i in range(number_of_negative_samples):
+    inds = list(range(non_vehicle_db_dict[db]['length']))
+    samples_available += non_vehicle_db_dict[db]['length']
 
-    while (True):
+    shuffle(inds)
+    non_vehicle_db_dict[db]['inds'] = inds
+    non_vehicle_db_dict[db]['i'] = 0
+
+  if samples_available < number_of_negative_samples:
+      print("Error: {av} negative samples available, but {req} required.".format(av=samples_available, req=number_of_negative_samples))
+      sys.exit(-1)
+
+  for i in range(number_of_negative_samples):
+    while(True):
       random_db = choice(list(non_vehicle_db_dict.keys()))
-      random_id = randint(0,non_vehicle_db_dict[random_db]['length']-1)
+
+      if non_vehicle_db_dict[random_db]['i'] >= non_vehicle_db_dict[random_db]['length']:
+        continue
+
+      random_id = non_vehicle_db_dict[random_db]['inds'][non_vehicle_db_dict[random_db]['i']]
+      non_vehicle_db_dict[random_db]['i'] += 1
 
       filepath = non_vehicle_db_main_path + random_db + '/' + os.listdir(non_vehicle_db_main_path+random_db)[random_id]
       if not filepath.endswith('.png'):
         continue
-      if random_id in non_vehicle_db_dict[random_db]['visited']:
-        continue
       break
-    non_vehicle_db_dict[random_db]['visited'].append(random_id)
+
     img = cv.imread(non_vehicle_db_main_path + random_db + '/' + os.listdir(non_vehicle_db_main_path+random_db)[random_id])
-    if img is None:
-      print(non_vehicle_db_main_path + random_db + '/' + os.listdir(non_vehicle_db_main_path+random_db)[random_id])
+
     img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
 
     img = resize(img, resize_shape)
@@ -160,6 +181,7 @@ def build_dataset_v2(positive_negative_ratio=1, number_of_positive_samples=2000,
 
 
   return imgs, labels
+
 
 
 def dataset_statistics_v2(imgs, labels, statistic_types, query_labels=[0,1]):

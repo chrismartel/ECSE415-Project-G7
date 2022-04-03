@@ -4,7 +4,7 @@ import numpy as np
 from random import shuffle
 import time
 
-def preprocess_images_v2(imgs, orientations, pixels_per_cell, cells_per_block, preprocessing_time=False):
+def preprocess_images_v2(imgs, orientations, pixels_per_cell, cells_per_block, preprocessing_time=False, compute_spatial_features=False):
   '''
   Preprocess an image.
 
@@ -27,14 +27,22 @@ def preprocess_images_v2(imgs, orientations, pixels_per_cell, cells_per_block, p
     start = time.time()
 
     # Min-max normalization
-    min, max = np.min(img), np.max(img)
+    min, max = 0, 255
     img = (img - min) / (max - min)
 
     # Extract HoG features
     feature = hog(img, orientations=orientations, pixels_per_cell = pixels_per_cell, cells_per_block=cells_per_block, feature_vector=True, multichannel=True, visualize=False)
     
+
+    if compute_spatial_features:
+      small_img = resize(img,(16,16))
+      spatial_features = small_img.flatten()
+      feature = np.concatenate((feature, spatial_features), axis=-1)
+
+    # inti features array
     if features is None:
       features = np.zeros((N, len(feature)))
+
     features[i] = feature
     end = time.time()
     exec_times_ms[i] = (end - start) * 1000
@@ -44,7 +52,7 @@ def preprocess_images_v2(imgs, orientations, pixels_per_cell, cells_per_block, p
   ret.append(features)
 
   if preprocessing_time:
-    ret.append(exec_times_ms)
+    ret.append(np.mean(exec_times_ms))
 
   if len(ret) == 1:
     return ret[0]

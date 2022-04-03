@@ -227,3 +227,69 @@ def dataset_statistics_v2(imgs, labels, statistic_types, query_labels=[0,1]):
     stats['class_distribution'] = class_count
   
   return stats
+
+
+def build_dataset_from_sliding_window(min_intersection_ratio=0.8, number_of_samples=1000, resize_shape=(64,64)):
+  '''
+      Build a dataset from provided image sequences and other external datasets. The built dataset consists of a 
+      dictionary. Each key corresponds to a sequence of images. The image sequences can be split and used for training.
+
+      positive_negative_ratio: The ratio of number of positive samples versus negative to generate in the dataset.
+      min_intersection_ratio: The minimum ratio of a random generated patch vs. a vehicle bbox to be considered a vehicle
+
+      return sequences, a dictionary containing list of images in each sequence.
+  '''
+
+  # Build sequence dictionary
+  number_of_sequences = 4
+  number_of_samples_per_sequence = int(number_of_samples/number_of_sequences)
+
+  N = number_of_samples
+  H, W = resize_shape
+  C = 3
+  imgs = np.zeros((N,H,W,C))
+  labels = np.zeros(number_of_samples_per_sequence*number_of_sequences)
+  count = 0
+
+  for seq_id in range(number_of_sequences):
+    
+    bboxes = parse('dataset/000{seq_id}.txt'.format(seq_id=seq_id))
+
+    img = cv.imread('dataset/000{seq_id}/000001.png'.format(seq_id=seq_id))
+    windows = slidingWindow(img.shape[0:2], init_size=(64,64), x_overlap=0.5, y_step=0.05,x_range=(0, 1), y_range=(0, 1), scale=1.5, dims=False)
+
+    for i in range(number_of_samples_per_sequence):
+      frame_id = choice(list(bboxes.keys()))
+      vehicle_bboxes = bboxes[frame_id]
+      img = cv.imread('dataset/000{seq_id}/{frame_id:06d}.png'.format(seq_id=seq_id, frame_id=frame_id))
+      img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
+      random_window = choice(windows)
+
+      random_window_x1, random_window_y1, random_window_x2, random_window_y2 = random_window
+      random_window_area = area(random_window)
+
+      # check intersection with vehicles
+      is_vehicle = 0
+      for (id, x1,y1,x2,y2) in vehicle_bboxes:
+        vehicle_bbox = (x1,y1,x2,y2)
+        vehicle_area = area(vehicle_bbox)
+
+        intersection_bbox = intersection(vehicle_bbox, random_window)
+        
+        # not a vehicle
+        if intersection_bbox is None:
+          continue
+        else:
+          intersection_area = area(intersection_bbox)
+          # check for minimal intersection
+          if intersection_area/vehicle_area > min_intersection_ratio and intersection_area/random_window_area > min_intersection_ratio:       
+            is_vehicle = 1
+            break
+
+    random_bbox_img = img[random_window_y1:random_window_y2,random_window_x1:random_window_x2]
+    random_bbox_img = resize(random_bbox_img,(input_shape))
+    imgs[count] = random_bbox_img
+    labels[count] = is_vehicle
+    count += 1
+
+  return imgs, labels

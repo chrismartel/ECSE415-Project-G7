@@ -4,7 +4,7 @@ import numpy as np
 from random import shuffle
 import time
 
-def preprocess_images_v2(imgs, orientations, pixels_per_cell, cells_per_block, preprocessing_time=False, compute_spatial_features=False):
+def preprocess_images_v2(imgs, orientations=9, pixels_per_cell=(2,2), cells_per_block=(4,4), preprocessing_time=False, compute_spatial_features=False, spatial_bins=(16,16)):
   '''
   Preprocess an image.
 
@@ -35,8 +35,8 @@ def preprocess_images_v2(imgs, orientations, pixels_per_cell, cells_per_block, p
     
 
     if compute_spatial_features:
-      small_img = resize(img,(16,16))
-      spatial_features = small_img.flatten()
+      spatial_img = resize(img,spatial_bins)
+      spatial_features = spatial_img.flatten()
       feature = np.concatenate((feature, spatial_features), axis=-1)
 
     # inti features array

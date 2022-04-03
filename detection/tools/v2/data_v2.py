@@ -1,9 +1,9 @@
 import os
 import cv2 as cv
 import numpy as np
-import os
 from random import randint, shuffle, choice
 from skimage.transform import resize
+import matplotlib.pyplot as plt
 
 # -------------------------------------------------------- #
 # ------------- Download and Delete Datasets ------------- #
@@ -61,11 +61,9 @@ def remove_datasets(datasets):
   for cmd in cmds:
     os.system(cmd)
 
-# -------------------------------------------------------- #
-# ------------- Build Dataset ---------------------------- #
-# -------------------------------------------------------- #
 
-def build_dataset_v2(positive_negative_ratio=1, number_of_positive_samples=2000, resize_shape=(64,64)):
+
+def build_dataset_v2(positive_negative_ratio=1, number_of_positive_samples=2000, resize_shape=(64,64), visualize=False):
   '''
       Build a dataset from udacity vehicle/non-vehicle dataset.
 
@@ -94,28 +92,40 @@ def build_dataset_v2(positive_negative_ratio=1, number_of_positive_samples=2000,
   vehicle_db_main_path = 'vehicles/'
   vehicle_db_subpaths= ['GTI_Far','GTI_Left','GTI_MiddleClose','GTI_Right','KITTI_extracted']
 
+  samples_available = 0
+
   vehicle_db_dict = dict()
   for db in vehicle_db_subpaths:
     vehicle_db_dict[db] = dict()
-    vehicle_db_dict[db]['visited'] = list() # keep track of visited ids
     vehicle_db_dict[db]['length'] = len(os.listdir(vehicle_db_main_path+db))
+    samples_available += vehicle_db_dict[db]['length']
+
+    inds = list(range(vehicle_db_dict[db]['length']))
+    shuffle(inds)
+    vehicle_db_dict[db]['inds'] = inds
+    vehicle_db_dict[db]['i'] = 0
+
+  if samples_available < number_of_negative_samples:
+      print("Error: {av} positive samples available, but {req} required.".format(av=samples_available, req=number_of_negative_samples))
+      sys.exit(-1)
 
   for i in range(number_of_positive_samples):
-
-    while (True):
+    while(True):
       random_db = choice(list(vehicle_db_dict.keys()))
-      random_id = randint(0,vehicle_db_dict[random_db]['length']-1)
+
+      if vehicle_db_dict[random_db]['i'] >= vehicle_db_dict[random_db]['length']:
+        continue
+
+      random_id = vehicle_db_dict[random_db]['inds'][vehicle_db_dict[random_db]['i']]
+      vehicle_db_dict[random_db]['i'] += 1
 
       filepath = vehicle_db_main_path + random_db + '/' + os.listdir(vehicle_db_main_path+random_db)[random_id]
       if not filepath.endswith('.png'):
         continue
-      if random_id in vehicle_db_dict[random_db]['visited']:
-        continue
       break
-    
+
     img = cv.imread(vehicle_db_main_path + random_db + '/' + os.listdir(vehicle_db_main_path+random_db)[random_id])
-    if img is None:
-      print(vehicle_db_main_path + random_db + '/' + os.listdir(vehicle_db_main_path+random_db)[random_id])
+
     img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
 
     img = resize(img, resize_shape)
@@ -129,28 +139,42 @@ def build_dataset_v2(positive_negative_ratio=1, number_of_positive_samples=2000,
   non_vehicle_db_main_path = 'non-vehicles/'
   non_vehicle_db_subpaths= ['Extras','GTI']
 
+  samples_available = 0
+
+
   non_vehicle_db_dict = dict()
   for db in non_vehicle_db_subpaths:
     non_vehicle_db_dict[db] = dict()
-    non_vehicle_db_dict[db]['visited'] = list() # keep track of visited ids
     non_vehicle_db_dict[db]['length'] = len(os.listdir(non_vehicle_db_main_path+db))
 
-  for i in range(number_of_negative_samples):
+    inds = list(range(non_vehicle_db_dict[db]['length']))
+    samples_available += non_vehicle_db_dict[db]['length']
 
-    while (True):
+    shuffle(inds)
+    non_vehicle_db_dict[db]['inds'] = inds
+    non_vehicle_db_dict[db]['i'] = 0
+
+  if samples_available < number_of_negative_samples:
+      print("Error: {av} negative samples available, but {req} required.".format(av=samples_available, req=number_of_negative_samples))
+      sys.exit(-1)
+
+  for i in range(number_of_negative_samples):
+    while(True):
       random_db = choice(list(non_vehicle_db_dict.keys()))
-      random_id = randint(0,non_vehicle_db_dict[random_db]['length']-1)
+
+      if non_vehicle_db_dict[random_db]['i'] >= non_vehicle_db_dict[random_db]['length']:
+        continue
+
+      random_id = non_vehicle_db_dict[random_db]['inds'][non_vehicle_db_dict[random_db]['i']]
+      non_vehicle_db_dict[random_db]['i'] += 1
 
       filepath = non_vehicle_db_main_path + random_db + '/' + os.listdir(non_vehicle_db_main_path+random_db)[random_id]
       if not filepath.endswith('.png'):
         continue
-      if random_id in non_vehicle_db_dict[random_db]['visited']:
-        continue
       break
-    
+
     img = cv.imread(non_vehicle_db_main_path + random_db + '/' + os.listdir(non_vehicle_db_main_path+random_db)[random_id])
-    if img is None:
-      print(non_vehicle_db_main_path + random_db + '/' + os.listdir(non_vehicle_db_main_path+random_db)[random_id])
+
     img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
 
     img = resize(img, resize_shape)
@@ -161,75 +185,7 @@ def build_dataset_v2(positive_negative_ratio=1, number_of_positive_samples=2000,
   return imgs, labels
 
 
-import numpy as np
-
-def dataset_statistics_v2(imgs, labels, statistic_types, query_labels=[0,1]):
-  '''
-      Collect width, height, and aspect ratios statistics from image dataset.
-
-      imgs: a numpy array of the shape N x H x W x C
-      labels: a numpy array of the shape N
-      
-      statistics: list containing the statistics to compute. Can contain the following values: 'width', 'height',
-                  'aspect_ratio', 'class_distribution'.
-      
-      labels: list of labels indicating from which image we want to collect statistics. 
-      
-      return a dictionary of statistics. For height, width, and aspect ratio, the value is a min-max tuple.
-                                         For class_distribution, the value is an array of counts per class.
-  '''
-  # Number of samples
-  number_of_samples = imgs.shape[0]
-
-  # Class distribution
-  if 'class_distribution' in statistic_types:
-    class_count = np.zeros(2)
-
-  # compute statistics on full image dataset
-  if 'aspect_ratio' in statistic_types:
-    aspect_ratios = np.zeros(number_of_samples)
-
-  if 'width' in statistic_types:
-    widths = np.zeros(number_of_samples)
-
-  if 'height' in statistic_types:
-    heights = np.zeros(number_of_samples)
-
-  i = 0
-  for i in range(number_of_samples):
-    # only collect statistics for specific labels
-    if labels[i] not in query_labels:
-      continue
-
-    if 'width' in statistic_types:
-      widths[i] = imgs[i].shape[2]
-
-    if 'height' in statistic_types:
-      heights[i] = imgs[i].shape[1]
-
-    if 'aspect_ratio' in statistic_types:
-      aspect_ratios[i] = heights[i] / float(widths[i])
-    
-    if 'class_distribution' in statistic_types:
-      class_count[labels[i]] += 1
-
-  stats = dict()
-  if 'width' in statistic_types:
-    stats['widths'] = widths    
-
-  if 'height' in statistic_types:
-    stats['heights'] = heights
-
-  if 'aspect_ratio' in statistic_types:
-    stats['aspect_ratios'] = aspect_ratios
-          
-  if 'class_distribution' in statistic_types:
-    stats['class_distribution'] = class_count
-  
-  return stats
-
-
-def build_dataset_from_sliding_window(min_intersection_ratio=0.8, number_of_samples=1000, resize_shape=(64,64)):
+def build_dataset_from_sequences(sequences,min_intersection_ratio=0.8, positive_negative_ratio=1, number_of_positive_samples=200, resize_shape=(64,64), visualize=False):
   '''
       Build a dataset from provided image sequences and other external datasets. The built dataset consists of a 
       dictionary. Each key corresponds to a sequence of images. The image sequences can be split and used for training.
@@ -241,28 +197,40 @@ def build_dataset_from_sliding_window(min_intersection_ratio=0.8, number_of_samp
   '''
 
   # Build sequence dictionary
-  number_of_sequences = 4
-  number_of_samples_per_sequence = int(number_of_samples/number_of_sequences)
+  number_of_sequences = len(sequences)
+  number_of_negative_samples = int((1.0/positive_negative_ratio)*number_of_positive_samples)
+  number_of_positive_samples_per_sequence = int(number_of_positive_samples/number_of_sequences)
+  number_of_negative_samples_per_sequence = int(number_of_negative_samples/number_of_sequences)
 
-  N = number_of_samples
+  N = number_of_negative_samples_per_sequence*number_of_sequences + number_of_positive_samples_per_sequence*number_of_sequences
   H, W = resize_shape
   C = 3
   imgs = np.zeros((N,H,W,C))
-  labels = np.zeros(number_of_samples_per_sequence*number_of_sequences)
-  count = 0
+  labels = np.zeros(N)
+  global_count = 0
 
-  for seq_id in range(number_of_sequences):
-    
+  for seq_id in sequences:
+    positive_count = 0
+
     bboxes = parse('dataset/000{seq_id}.txt'.format(seq_id=seq_id))
 
-    img = cv.imread('dataset/000{seq_id}/000001.png'.format(seq_id=seq_id))
-    windows = slidingWindow(img.shape[0:2], init_size=(64,64), x_overlap=0.5, y_step=0.05,x_range=(0, 1), y_range=(0, 1), scale=1.5, dims=False)
+    # init sliding window
+    img = cv.imread('dataset/000{seq_id}/{frame_id:06d}.png'.format(seq_id=seq_id, frame_id=1))
+    windows = slidingWindow(img.shape[0:2], init_size=(64,64), x_overlap=0.05, y_step=0.05,x_range=(0, 1), y_range=(0, 1), scale=1.2, dims=False)
 
-    for i in range(number_of_samples_per_sequence):
+
+    ################
+    # NEGATIVE SET #
+    ################
+
+    # Apply sliding window and add samples with minimal interesection with vehicle boxes
+    for i in range(number_of_negative_samples_per_sequence):
+
       frame_id = choice(list(bboxes.keys()))
       vehicle_bboxes = bboxes[frame_id]
       img = cv.imread('dataset/000{seq_id}/{frame_id:06d}.png'.format(seq_id=seq_id, frame_id=frame_id))
       img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
+
       random_window = choice(windows)
 
       random_window_x1, random_window_y1, random_window_x2, random_window_y2 = random_window
@@ -286,10 +254,65 @@ def build_dataset_from_sliding_window(min_intersection_ratio=0.8, number_of_samp
             is_vehicle = 1
             break
 
-    random_bbox_img = img[random_window_y1:random_window_y2,random_window_x1:random_window_x2]
-    random_bbox_img = resize(random_bbox_img,(input_shape))
-    imgs[count] = random_bbox_img
-    labels[count] = is_vehicle
-    count += 1
+      random_bbox_img = img[random_window_y1:random_window_y2,random_window_x1:random_window_x2]
+
+      random_bbox_img = resize(random_bbox_img,(resize_shape))
+
+      imgs[global_count] = random_bbox_img
+      labels[global_count] = is_vehicle
+
+      if visualize:
+        plt.imshow(imgs[global_count])
+        plt.xticks([]), plt.yticks([])
+        plt.show()  
+        print("label: ",labels[global_count])
+
+      if is_vehicle:
+        positive_count += 1
+
+      global_count += 1
+
+
+    ################
+    # POSITIVE SET #
+    ################
+    sequence_complete = False
+    while(not sequence_complete):
+
+      frame_id = choice(list(bboxes.keys()))
+      vehicle_bboxes = bboxes[frame_id]
+      img = cv.imread('dataset/000{seq_id}/{frame_id:06d}.png'.format(seq_id=seq_id, frame_id=frame_id))
+      img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
+
+      for (id, x1,y1,x2,y2) in vehicle_bboxes:
+
+        if sequence_complete:
+          break
+
+        vehicle_bbox = (x1,y1,x2,y2)
+        new_bboxes = more_bboxes(vehicle_bbox,img.shape[0:2], number_of_bboxes=1, x_scale=(0.98,1.02), y_scale=(0.98,1.02), x_translate=(-0.03,0.03), y_translate=(-0.03,0.03))
+
+        for new_bbox in new_bboxes:
+
+          if sequence_complete:
+            break
+
+          new_bbox_img = img[new_bbox[1]:new_bbox[3],new_bbox[0]:new_bbox[2]]
+          new_bbox_img = resize(new_bbox_img,(resize_shape))
+
+          imgs[global_count] = new_bbox_img
+          labels[global_count] = 1
+          positive_count += 1
+
+          if visualize:
+            plt.imshow(imgs[global_count])
+            plt.xticks([]), plt.yticks([])
+            plt.show()
+            print("label: ",labels[global_count])
+
+          if positive_count >= number_of_positive_samples_per_sequence:
+            sequence_complete = True
+
+          global_count += 1
 
   return imgs, labels

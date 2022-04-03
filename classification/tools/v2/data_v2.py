@@ -65,6 +65,7 @@ def remove_datasets(datasets):
 # ------------- Build Dataset ---------------------------- #
 # -------------------------------------------------------- #
 
+
 def build_dataset_v2(positive_negative_ratio=1, number_of_positive_samples=2000, resize_shape=(64,64)):
   '''
       Build a dataset from udacity vehicle/non-vehicle dataset.
@@ -112,7 +113,7 @@ def build_dataset_v2(positive_negative_ratio=1, number_of_positive_samples=2000,
       if random_id in vehicle_db_dict[random_db]['visited']:
         continue
       break
-    
+    vehicle_db_dict[random_db]['visited'].append(random_id)
     img = cv.imread(vehicle_db_main_path + random_db + '/' + os.listdir(vehicle_db_main_path+random_db)[random_id])
     if img is None:
       print(vehicle_db_main_path + random_db + '/' + os.listdir(vehicle_db_main_path+random_db)[random_id])
@@ -147,7 +148,7 @@ def build_dataset_v2(positive_negative_ratio=1, number_of_positive_samples=2000,
       if random_id in non_vehicle_db_dict[random_db]['visited']:
         continue
       break
-    
+    non_vehicle_db_dict[random_db]['visited'].append(random_id)
     img = cv.imread(non_vehicle_db_main_path + random_db + '/' + os.listdir(non_vehicle_db_main_path+random_db)[random_id])
     if img is None:
       print(non_vehicle_db_main_path + random_db + '/' + os.listdir(non_vehicle_db_main_path+random_db)[random_id])
@@ -160,8 +161,6 @@ def build_dataset_v2(positive_negative_ratio=1, number_of_positive_samples=2000,
 
   return imgs, labels
 
-
-import numpy as np
 
 def dataset_statistics_v2(imgs, labels, statistic_types, query_labels=[0,1]):
   '''

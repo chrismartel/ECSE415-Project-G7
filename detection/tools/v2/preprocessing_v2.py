@@ -3,7 +3,6 @@ from skimage.feature import hog
 import numpy as np
 from random import shuffle
 import time
-import cv2
 
 
 def preprocess_images_v2(
@@ -12,7 +11,8 @@ def preprocess_images_v2(
     pixels_per_cell,
     cells_per_block,
     preprocessing_time=False,
-    compute_spatial_features=True,
+    compute_spatial_features=False,
+    hist_features=False,
 ):
     """
     Preprocess an image.
@@ -50,8 +50,20 @@ def preprocess_images_v2(
             visualize=False,
         )
 
+        if hist_features:
+            if len(img.shape) < 3:
+                img = img[:, :, np.newaxis]
+
+            hist_vector = np.array([])
+            for channel in range(img.shape[2]):
+                channel_hist = np.histogram(
+                    img[:, :, channel], bins=16, range=(0, 255)
+                )[0]
+                hist_vector = np.hstack((hist_vector, channel_hist))
+            feature = np.hstack((feature, hist_vector))
+
         if compute_spatial_features:
-            small_img = cv2.resize(img, (16, 16))
+            small_img = resize(img, (20, 20))
             spatial_features = small_img.flatten()
             feature = np.concatenate((feature, spatial_features), axis=-1)
 

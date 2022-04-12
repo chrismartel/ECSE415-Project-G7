@@ -16,7 +16,7 @@ The notebook contains all the methods required to download data, build datasets,
 
 The detection and classification code is located in `./detection/detection.ipynb` and can be run locally or with Google Colab by downloading the image sequences dataset and importing the tools directory (`./detection/tools`) to the Colab runtime.
 
-### Paths
+#### Paths
 
 - Set the `model_path` and `config_path` to the locations of the model and model config files respectively.
 - Set the `dataset_path` to location of the image sequence dataset.
@@ -27,7 +27,7 @@ The tracking code is located in `./tracking/tracking.ipynb` and can both be run 
 
 The annotated tracking videos are located at `./tracking/lucas-kanade-tracker.mp4` and `./tracking/alternate_tracker.mp4`.
 
-### Paths
+#### Paths
 
 - Set the `project_path` to the locations of a Google Drive folder containing your model and dataset files.
 - Set the `database_path` to the location of the 0003 image sequence dataset.
@@ -37,7 +37,7 @@ The annotated tracking videos are located at `./tracking/lucas-kanade-tracker.mp
 
 The code for the deep learning implementation of detection is located in `./cnn/cnn.ipynb` and can both be run with Google Colab.
 
-### Paths
+#### Paths
 
 - Set the `drive_path` to the locations of a Google Drive folder containing your model and dataset files.
 - Set the `dataset_path` to the location of the image sequence dataset within your project folder.

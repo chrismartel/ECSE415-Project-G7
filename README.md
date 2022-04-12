@@ -27,6 +27,12 @@ The tracking code is located in `./tracking/tracking.ipynb` and can both be run 
 
 The annotated tracking videos are located at `./tracking/lucas-kanade-tracker.mp4` and `./tracking/alternate_tracker.mp4`.
 
+### Paths
+
+- Set the `project_path` to the locations of a Google Drive folder containing your model and dataset files.
+- Set the `database_path` to the location of the 0003 image sequence dataset.
+- Set the `model_path` to the location of the classification model used.
+
 ## Deep Learning Implementation 
 
 The code for the deep learning implementation of detection is located in `./cnn/cnn.ipynb` and can both be run with Google Colab.

@@ -3,40 +3,14 @@ import json
 import yaml
 import gc
 
-# Dataset parameters
-min_intersection_ratio = 0.8
-number_of_positive_samples = 4000
-number_of_negative_samples = 6000
-number_of_positive_samples_per_sequence = 1000
-number_of_negative_samples_per_sequence = 3000
+import cross_validation
+import data
+import preprocessing
 
-# Preprocessing parameters
-resize_shape = (64,64)
-orientations = 9 # number of orientation bins
-pixels_per_cell = (8,8) # number of pixels per cell
-cells_per_block = (2,2) # number of cells per block
-compute_spatial_features=False
-spatial_bins =(8,8)
-
-classifier_type = 'linear'
-
-# SVM parameters
-C = 1000
-bagging = False
-n_estimators = 1
-
-# Random Forest params
-n_estimators_random_forest = 500
-criterion = 'entropy'
-max_depth = None
-min_samples_split = 2
-
-sequence_ids = ['0','1','2']
-
-
-def train_and_save_model(path, save_model=True, save_config=True, train_sequences=sequence_ids,classifier_type=classifier_type, number_of_positive_samples=number_of_positive_samples, number_of_negative_samples=number_of_negative_samples, number_of_positive_samples_per_sequence=number_of_positive_samples_per_sequence, number_of_negative_samples_per_sequence=number_of_negative_samples_per_sequence, min_intersection_ratio=min_intersection_ratio, resize_shape=resize_shape, compute_spatial_features=compute_spatial_features, spatial_bins=spatial_bins, orientations=orientations, pixels_per_cell=pixels_per_cell,cells_per_block=cells_per_block,C=C, bagging=bagging, n_estimators=n_estimators, n_estimators_random_forest=n_estimators_random_forest, criterion=criterion, max_depth=max_depth, min_samples_split=min_samples_split):
+def train_and_save_model(path, save_model=True, save_config=True, train_sequences=sequence_ids_default,classifier_type=classifier_type_default, number_of_positive_samples=number_of_positive_samples_default, number_of_negative_samples=number_of_negative_samples_default, number_of_positive_samples_per_sequence=number_of_positive_samples_per_sequence_default, number_of_negative_samples_per_sequence=number_of_negative_samples_per_sequence_default, min_intersection_ratio=min_intersection_ratio_default, resize_shape=resize_shape_default, compute_spatial_features=compute_spatial_features_default, spatial_bins=spatial_bins_default, orientations=orientations_default, pixels_per_cell=pixels_per_cell_default,cells_per_block=cells_per_block_default,C=C_default, gamma=gamma_default, bagging=bagging_default, n_estimators=n_estimators_default, n_estimators_random_forest=n_estimators_random_forest_default, criterion=criterion_default, max_depth=max_depth_default, min_samples_split=min_samples_split_default):
   '''
     Train a svm classifier with HoG features and save it.
+
 
     path: model path and name ex: classification/models/svm1
 
@@ -45,11 +19,11 @@ def train_and_save_model(path, save_model=True, save_config=True, train_sequence
 
   # Build Dataset
   imgs, labels = build_dataset_from_udacity(number_of_positive_samples=number_of_positive_samples, number_of_negative_samples=number_of_negative_samples, visualize=False)
-  seq_imgs, seq_labels = build_dataset_from_sequences(sequence_ids,min_intersection_ratio=min_intersection_ratio, number_of_positive_samples_per_sequence=number_of_positive_samples_per_sequence, number_of_negative_samples_per_sequence=number_of_negative_samples_per_sequence, visualize=False)
+  seq_imgs, seq_labels = build_dataset_from_sequences(train_sequences,min_intersection_ratio=min_intersection_ratio, number_of_positive_samples_per_sequence=number_of_positive_samples_per_sequence, number_of_negative_samples_per_sequence=number_of_negative_samples_per_sequence, visualize=False)
   imgs, labels = imgs + seq_imgs, np.concatenate((labels,seq_labels), axis=0)
 
   # Preprocess
-  features = preprocess_images(imgs, orientations=orientations, resize_shape=resize_shape, pixels_per_cell=pixels_per_cell, cells_per_block=cells_per_block, scaling=True, preprocessing_time=False, compute_spatial_features=False, spatial_bins=spatial_bins, visualize=False, grayscale=True)
+  features = preprocess_images(imgs, orientations=orientations, resize_shape=resize_shape, pixels_per_cell=pixels_per_cell, cells_per_block=cells_per_block, scaling=True, preprocessing_time=False, compute_spatial_features=False, spatial_bins=spatial_bins, visualize=False, grayscale=False)
 
   # Shuffle
   number_of_samples = features.shape[0]
@@ -59,16 +33,16 @@ def train_and_save_model(path, save_model=True, save_config=True, train_sequence
   x_train, y_train = features[inds], labels[inds]
 
   # LINEAR SVM
-  if classifier_type == 'linear':
+  if classifier_type == 'rbf':
     # Bagging classifier
     if bagging:
-      clf = BaggingClassifier(base_estimator=svm.SVC(gamma='scale', C=C), n_estimators=n_estimators, random_state=None)
+      clf = BaggingClassifier(base_estimator=svm.SVC(gamma=gamma, C=C), n_estimators=n_estimators, random_state=None)
     # Binary Classifier
     else:
-      clf = svm.SVC(gamma='scale', C=C)
+      clf = svm.SVC(gamma=gamma, C=C)
   
   # RBF SVM
-  elif classifier_type == 'rbf':
+  elif classifier_type == 'linear':
     # Bagging classifier
     if bagging:
       clf = BaggingClassifier(base_estimator=svm.LinearSVC(C=C), n_estimators=n_estimators, random_state=None)
@@ -119,6 +93,7 @@ def train_and_save_model(path, save_model=True, save_config=True, train_sequence
     
     data['clf']['type'] = classifier_type
     data['clf']['C'] = C
+    data['clf']['gamma'] = gamma
     data['clf']['bagging'] = bagging
     data['clf']['n_estimators'] = n_estimators
 

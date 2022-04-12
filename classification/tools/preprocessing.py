@@ -6,20 +6,23 @@ import time
 from sklearn.preprocessing import StandardScaler
 import cv2 as cv
 
-def preprocess_images(imgs, orientations=9, resize_shape=(64,64), pixels_per_cell=(2,2), cells_per_block=(4,4), scaling=True, preprocessing_time=False, compute_spatial_features=False, spatial_bins=(8,8), visualize=False, grayscale=True):
+def preprocess_images(imgs, orientations=9, resize_shape=(64,64), pixels_per_cell=(2,2), cells_per_block=(4,4), scaling=True, preprocessing_time=False, compute_spatial_features=False, spatial_bins=(8,8), visualize=False, grayscale=Falsee):
   '''
   Preprocess an image.
 
+  Params
+  ------
   img: numpy array of shape (N, H,W,C)
   resize_shape: tuple - shape to which image are resized before hof computations
   scaling: boolean - indicates if feature vector must be scaled
   grayscale: boolean - indicate if image must be converted to grayscale
-
   orientations: int - number of orientation bins in hog feature computations
   pixels_per_cells: tuple (h,w) - number of pixels per cell in hog feature computation
   cells_per_block: tuple (h,w) - number of cells per block in hog feature computation
   preprocessing_time: indicates if preprocessing time must be computed and returned
 
+  Return
+  ------
   return (features, (optional)hog_img, (optional)time) - HoG features extracted from the images,
   the HoG images, and the preprocessing times in ms
   '''
@@ -99,3 +102,5 @@ def preprocess_images(imgs, orientations=9, resize_shape=(64,64), pixels_per_cel
     return ret[0]
   else:
     return tuple(ret)
+
+seq_features, features = None, None

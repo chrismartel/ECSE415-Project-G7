@@ -7,6 +7,42 @@ from skimage.transform import resize
 import sys
 import matplotlib.pyplot as plt
 
+# Dataset parameters
+min_intersection_ratio_default = 0.75
+number_of_positive_samples_default = 1350
+number_of_negative_samples_default = 1500
+number_of_positive_samples_per_sequence_default = 1350
+number_of_negative_samples_per_sequence_default = 1500
+
+# Preprocessing parameters
+resize_shape_default = (64,64)
+orientations_default = 9 # number of orientation bins
+pixels_per_cell_default = (4,4) # number of pixels per cell
+cells_per_block_default = (2,2) # number of cells per block
+compute_spatial_features_default=True
+spatial_bins_default =(8,8)
+
+#CV
+K_default = 3
+I_default = 1
+
+classifier_type_default = 'rbf'
+
+# SVM parameters
+C_default = 5
+gamma_default = 0.00001
+bagging_default = False
+n_estimators_default = 1
+
+# Random Forest params
+n_estimators_random_forest_default = 500
+criterion_default = 'entropy'
+max_depth_default = None
+min_samples_split_default = 2
+
+sequence_ids_default = ['0','1','2']
+test_seq_id_default = '3'
+
 def download_datasets(datasets):
 
   cmds = list()
@@ -125,69 +161,27 @@ def area(r):
   '''
   return (r[2]-r[0])*(r[3]-r[1])
 
-def slidingWindow(image_size, init_size=(64,64), x_overlap=0.5, y_step=0.05,
-        x_range=(0, 1), y_range=(0, 1), scale=1.5, dims=False):
-
-    """
-    Run a sliding window across an input image and return a list of the
-    coordinates of each window.
-    Window travels the width of the image (in the +x direction) at a range of
-    heights (toward the bottom of the image in the +y direction). At each
-    successive y, the size of the window is increased by a factor equal to
-    @param scale. The horizontal search area is limited by @param x_range
-    and the vertical search area by @param y_range.
-    @param image_size (int, int): Size of the image (width, height) in pixels.
-    @param init_size (int, int): Initial size of of the window (width, height)
-        in pixels at the initial y, given by @param y_range[0].
-    @param x_overlap (float): Overlap between adjacent windows at a given y
-        as a float in the interval [0, 1), where 0 represents no overlap
-        and 1 represents 100% overlap.
-    @param y_step (float): Distance between successive heights y as a
-        fraction between (0, 1) of the total height of the image.
-    @param x_range (float, float): (min, max) bounds of the horizontal search
-        area as a fraction of the total width of the image.
-    @param y_range (float, float) (min, max) bounds of the vertical search
-        area as a fraction of the total height of the image.
-    @param scale (float): Factor by which to scale up window size at each y.
-    @return windows: List of tuples, where each tuple represents the
-        coordinates of a window in the following order: (upper left corner
-        x coord, upper left corner y coord, lower right corner x coord,
-        lower right corner y coord).
-    """
-
-    windows = []
-    y_count = 0
-    h, w = image_size[1], image_size[0]
-    for y in range(int(y_range[0] * h), int(y_range[1] * h), int(y_step * h)):
-        y_count += 1
-        win_width = int(init_size[0] + (scale * (y - (y_range[0] * h))))
-        win_height = int(init_size[1] + (scale * (y - (y_range[0] * h))))
-        if y + win_height > int(y_range[1] * h) or win_width > w:
-            break
-        x_step = int((1 - x_overlap) * win_width)
-        for x in range(int(x_range[0] * w), int(x_range[1] * w), x_step):
-            windows.append((x, y, x + win_width, y + win_height))
-
-    if (dims):
-        return windows, y_count
-    return windows
-
-
-def more_bboxes(bbox,img_dim,  number_of_bboxes=10, x_scale=(0.98,1.02), y_scale=(0.98,1.02), x_translate=(-0.02,0.02), y_translate=(-0.02,0.02)):
+def more_bboxes(bbox,img_dim,  number_of_bboxes=10, x_scale=(1,1.005), y_scale=(1,1.005), x_translate=(-0.02,0.02), y_translate=(-0.02,0.02)):
   '''
       Generate list of bounding boxes around box of interest by applying random transations and scaling.
 
-      @param bbox: the bounding box of interest
-      @ img_dim: dimensions of the full image
-      @ number_of_bboxes: the number of new bboxes to generate
-      @ x_scale: how much to scale the new bboxes around the bbox of interest on the x axis
-      @ y_scale: how much to scale the new bboxes around the bbox of interest on the y axis
-      @ x_translate: how much to translate the new bboxes around the bbox of interest on the x axis
-      @ y_translate: how much to translate the new bboxes around the bbox of interest on the y axis
+      Params
+      ------
+      - param bbox: the bounding box of interest
+      - img_dim: dimensions of the full image
+      - number_of_bboxes: the number of new bboxes to generate
+      - x_scale: how much to scale the new bboxes around the bbox of interest on the x axis
+      - y_scale: how much to scale the new bboxes around the bbox of interest on the y axis
+      - x_translate: how much to translate the new bboxes around the bbox of interest on the x axis
+      - y_translate: how much to translate the new bboxes around the bbox of interest on the y axis
+
+      Return
+      ------
+      return list of randomly generated bounding boxes around the box of interest.
   '''
   # bounds
   x_left_bound, x_right_bound = 0, img_dim[1]
-  y_top_bound, y_bottom_bound = 0, img_dim[1]
+  y_top_bound, y_bottom_bound = 0, img_dim[0]
   x1, y1, x2, y2 = bbox
   w = float(x2 - x1)
   h = float(y2 - y1)
@@ -247,17 +241,78 @@ def more_bboxes(bbox,img_dim,  number_of_bboxes=10, x_scale=(0.98,1.02), y_scale
 
       # OK
       bboxes.append((new_x1,new_y1,new_x2,new_y2))
+
       break
   return bboxes
+
+def slidingWindow(image_size, init_size=(64,64), x_overlap=0.5, y_step=0.05,
+        x_range=(0, 1), y_range=(0, 1), scale=1.5, dims=False):
+
+    """
+    Run a sliding window across an input image and return a list of the
+    coordinates of each window.
+    Window travels the width of the image (in the +x direction) at a range of
+    heights (toward the bottom of the image in the +y direction). At each
+    successive y, the size of the window is increased by a factor equal to
+
+    Params
+    ------
+    - scale. The horizontal search area is limited by @param x_range
+    and the vertical search area by @param y_range.
+    - image_size (int, int): Size of the image (width, height) in pixels.
+    - init_size (int, int): Initial size of of the window (width, height)
+        in pixels at the initial y, given by @param y_range[0].
+    - x_overlap (float): Overlap between adjacent windows at a given y
+        as a float in the interval [0, 1), where 0 represents no overlap
+        and 1 represents 100% overlap.
+    - y_step (float): Distance between successive heights y as a
+        fraction between (0, 1) of the total height of the image.
+    - x_range (float, float): (min, max) bounds of the horizontal search
+        area as a fraction of the total width of the image.
+    - y_range (float, float) (min, max) bounds of the vertical search
+        area as a fraction of the total height of the image.
+    - scale (float): Factor by which to scale up window size at each y.
+    -  windows: List of tuples, where each tuple represents the
+        coordinates of a window in the following order: (upper left corner
+        x coord, upper left corner y coord, lower right corner x coord,
+        lower right corner y coord).
+    """
+
+    windows = []
+    y_count = 0
+    h, w = image_size[1], image_size[0]
+    init_size = (0.1*h, 0.1*w)
+    for y in range(int(y_range[0] * h), int(y_range[1] * h), int(y_step * h)):
+        y_count += 1
+        win_width = int(init_size[0] + (scale * (y - (y_range[0] * h))))
+        win_height = int(init_size[1] + (scale * (y - (y_range[0] * h))))
+        if y + win_height > int(y_range[1] * h) or win_width > w:
+            break
+        x_step = int((1 - x_overlap) * win_width)
+        for x in range(int(x_range[0] * w), int(x_range[1] * w), x_step):
+            windows.append((x, y, x + win_width, y + win_height))
+
+    if (dims):
+        return windows, y_count
+    return windows
 
 def build_dataset_from_sequences(sequences,min_intersection_ratio=0.9, number_of_positive_samples_per_sequence=1000, number_of_negative_samples_per_sequence=4000, visualize=False):
   '''
       Build a dataset from provided image sequences and other external datasets. The built dataset consists of a 
       dictionary. Each key corresponds to a sequence of images. The image sequences can be split and used for training.
 
-      positive_negative_ratio: The ratio of number of positive samples versus negative to generate in the dataset.
-      min_intersection_ratio: The minimum ratio of a random generated patch vs. a vehicle bbox to be considered a vehicle
+      Params
+      ------
+      - min_intersection_ratio: minimum intersection with truth bounding box to be considered a vehicle.
+      - sequences: list of sequences ids from which to extract patches.
+      - number_of_positive_samples_per_sequence: number of vehicle samples to generate.
+      - number_of_negative_samples_per_sequence: number of non-vehicle samples to generate.
+      - visualize: if True, display extracted images, otherwise, don't display.
 
+      Return
+      ------
+      return a tuple (imgs, labels) where imgs are the extracted images from the sequences
+      and labels is a numpy array of the associated labels.
   '''
 
   # Build sequence dictionary
@@ -275,7 +330,7 @@ def build_dataset_from_sequences(sequences,min_intersection_ratio=0.9, number_of
 
     # init sliding window
     img = cv.imread('dataset/000{seq_id}/{frame_id:06d}.png'.format(seq_id=seq_id, frame_id=1))
-    windows = slidingWindow(img.shape[0:2], init_size=(64,64), x_overlap=0.05, y_step=0.05,x_range=(0, 1), y_range=(0, 1), scale=1.1, dims=False)
+    windows = slidingWindow(img.shape[0:2], init_size=(int(img.shape[0]/10),int(img.shape[0]/10)), x_overlap=0.05, y_step=0.05,x_range=(0, 1), y_range=(0, 1), scale=1.2, dims=False)
 
     ################
     # NEGATIVE SET #
@@ -288,34 +343,41 @@ def build_dataset_from_sequences(sequences,min_intersection_ratio=0.9, number_of
       vehicle_bboxes = bboxes[frame_id]
       img = cv.imread('dataset/000{seq_id}/{frame_id:06d}.png'.format(seq_id=seq_id, frame_id=frame_id))
 
+      while(True):
+        random_window = choice(windows)
 
-      random_window = choice(windows)
+        if ((random_window[3]-random_window[1])/(random_window[2]-random_window[0])) > 2:
+          continue
 
-      random_window_x1, random_window_y1, random_window_x2, random_window_y2 = random_window
-      random_window_area = area(random_window)
+        random_window_x1, random_window_y1, random_window_x2, random_window_y2 = random_window
+        random_window_area = area(random_window)
 
-      # check intersection with vehicles
-      is_vehicle = 0
-      for (id, x1,y1,x2,y2) in vehicle_bboxes:
-        vehicle_bbox = (x1,y1,x2,y2)
-        vehicle_area = area(vehicle_bbox)
+        # check intersection with vehicles
+        is_vehicle = 0
+        for (id, x1,y1,x2,y2) in vehicle_bboxes:
+          vehicle_bbox = (x1,y1,x2,y2)
+          vehicle_area = area(vehicle_bbox)
 
-        intersection_bbox = intersection(vehicle_bbox, random_window)
-        
-        # not a vehicle
-        if intersection_bbox is None:
+          intersection_bbox = intersection(vehicle_bbox, random_window)
+          
+          # not a vehicle
+          if intersection_bbox is None:
+            continue
+          else:
+            intersection_area = area(intersection_bbox)
+            # check for minimal intersection
+            if intersection_area/vehicle_area > min_intersection_ratio and intersection_area/random_window_area > min_intersection_ratio:       
+              is_vehicle = 1
+              break
+        if is_vehicle:
           continue
         else:
-          intersection_area = area(intersection_bbox)
-          # check for minimal intersection
-          if intersection_area/vehicle_area > min_intersection_ratio and intersection_area/random_window_area > min_intersection_ratio:       
-            is_vehicle = 1
-            break
+          break
 
       random_bbox_img = img[random_window_y1:random_window_y2,random_window_x1:random_window_x2]
 
       imgs.append(random_bbox_img)
-      labels.append(is_vehicle)
+      labels.append(0)
 
       if visualize:
         plt.imshow(random_bbox_img)
@@ -340,12 +402,16 @@ def build_dataset_from_sequences(sequences,min_intersection_ratio=0.9, number_of
           break
 
         vehicle_bbox = (x1,y1,x2,y2)
-        new_bboxes = more_bboxes(vehicle_bbox,img.shape[0:2], number_of_bboxes=1)
+        if ((y2-y1)/(x2-x1)) > 2:
+          continue
+
+        new_bboxes = more_bboxes(vehicle_bbox,img.shape[0:2], number_of_bboxes=2)
 
         for new_bbox in new_bboxes:
 
           if sequence_complete:
             break
+
 
           new_bbox_img = img[new_bbox[1]:new_bbox[3],new_bbox[0]:new_bbox[2]]
 
@@ -363,13 +429,45 @@ def build_dataset_from_sequences(sequences,min_intersection_ratio=0.9, number_of
             sequence_complete = True
   return imgs, np.array(labels)
 
+
+
+def add_data_to_sequence(sequence_imgs, sequence_labels, seq_id, min_intersection_ratio=min_intersection_ratio_default, number_of_positive_samples_per_sequence=number_of_positive_samples_per_sequence_default, number_of_negative_samples_per_sequence=number_of_negative_samples_per_sequence_default, visualize=False):
+  '''
+      Add t a dataset generated from a KITTI video sequence.
+
+      Params
+      ------
+      - seq_id: the sequence id of the video from which we wish to add data sample
+      - min_intersection_ratio: minimum intersection with truth bounding box to be considered a vehicle.
+      - sequences: list of sequences ids from which to extract patches.
+      - number_of_positive_samples_per_sequence: number of vehicle samples to generate.
+      - number_of_negative_samples_per_sequence: number of non-vehicle samples to generate.
+      - visualize: if True, display extracted images, otherwise, don't display.
+
+      Return
+      ------
+      return the updated data images and labels
+  '''
+  new_imgs, new_labels = build_dataset_from_sequences(seq_id,min_intersection_ratio=min_intersection_ratio, number_of_positive_samples_per_sequence=number_of_positive_samples_per_sequence, number_of_negative_samples_per_sequence=number_of_negative_samples_per_sequence, visualize=False)
+  sequence_imgs += new_imgs
+  sequence_labels = np.concatenate((sequence_labels,new_labels), axis=0)
+  return sequence_imgs, sequence_labels
+
+sequence_imgs, sequence_labels = None, None
+
+
 def build_dataset_from_udacity(number_of_positive_samples=2000, number_of_negative_samples=4000, visualize=False):
   '''
       Build a dataset from udacity vehicle/non-vehicle dataset.
 
-      number_of_negative_samples: The number of negative samples to use. 
-      number_of_positive_samples: The number of positive samples to use. 
+      Params
+      ------
+      - number_of_negative_samples: The number of negative samples to extract. 
+      - number_of_positive_samples: The number of positive samples to extract. 
+      - visualize: if True, display extracted images, otherwise, don't display.
 
+      Return
+      ------
       return a tuple (imgs, labels). imgs is a numpy array with shape N x H x W x C where N is the number of samples, H is the images height,
       W is the images width and C is the number of channels. labels correspond to the labels associated with each image
   '''
@@ -467,18 +565,43 @@ def build_dataset_from_udacity(number_of_positive_samples=2000, number_of_negati
   return imgs, np.array(labels)
 
 
-def dataset_statistics(imgs, labels, statistic_types, query_labels=[0,1]):
+def add_data(imgs, labels, number_of_positive_samples=number_of_positive_samples_default, number_of_negative_samples=number_of_negative_samples_default, visualize=False):
+  '''
+      Add images to dataset
+
+      Params
+      ------
+      - number_of_positive_samples: number of vehicle samples to generate.
+      - number_of_negative_samples: number of non-vehicle samples to generate.
+      - visualize: if True, display extracted images, otherwise, don't display.
+
+      Return
+      ------
+      return the updated data images and labels
+  '''
+  new_imgs, new_labels = build_dataset_from_udacity(number_of_positive_samples=number_of_positive_samples, number_of_negative_samples=number_of_negative_samples, visualize=False)
+  imgs += new_imgs
+  labels = np.concatenate((labels,new_labels), axis=0)
+  return imgs, labels
+
+imgs, labels = None, None
+
+
+
+
+def dataset_statistics(imgs, labels, statistic_types):
   '''
       Collect width, height, and aspect ratios statistics from image dataset.
 
+      Params
+      ------
       imgs: a list of images
-      labels: a numpy array of the shape N
-      
+      labels: 2D numpy array labels associated with the images
       statistics: list containing the statistics to compute. Can contain the following values: 'width', 'height',
                   'aspect_ratio', 'class_distribution'.
       
-      labels: list of labels indicating from which image we want to collect statistics. 
-      
+      Return
+      ------
       return a dictionary of statistics. For height, width, and aspect ratio, the value is a min-max tuple.
                                          For class_distribution, the value is an array of counts per class.
   '''
@@ -501,15 +624,12 @@ def dataset_statistics(imgs, labels, statistic_types, query_labels=[0,1]):
 
   i = 0
   for i in range(number_of_samples):
-    # only collect statistics for specific labels
-    if labels[i] not in query_labels:
-      continue
 
     if 'width' in statistic_types:
-      widths[i] = imgs[i].shape[2]
+      widths[i] = imgs[i].shape[1]
 
     if 'height' in statistic_types:
-      heights[i] = imgs[i].shape[1]
+      heights[i] = imgs[i].shape[0]
 
     if 'aspect_ratio' in statistic_types:
       aspect_ratios[i] = heights[i] / float(widths[i])

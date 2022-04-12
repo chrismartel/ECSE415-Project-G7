@@ -14,7 +14,7 @@ The notebook contains all the methods required to download data, build datasets,
 
 ## Detection and Localization
 
-The detection and classification code is located in `./detection/detection.ipynb` and can be run locally or with Google Colab by downloading the image sequences dataset and importing the tools directory (`./detection/tools`) to the Colab runtime.
+The detection and classification code is located in `./detection/detection.ipynb` and can be run locally or with Google Colab by uploading the image sequences dataset to the Colab runtime.
 
 #### Paths
 

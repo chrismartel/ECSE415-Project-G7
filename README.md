@@ -23,7 +23,9 @@ The detection and classification code is located in `./detection/detection.ipynb
 
 The tracking code is located in `./tracking/tracking.ipynb` and can both be run with Google Colab.
 
-#### Train model
+## Additional Scripts
+
+###Train model
 
 To train a model, we can run the python script: train.py in the following format
 

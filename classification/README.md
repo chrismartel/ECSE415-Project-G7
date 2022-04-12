@@ -1,11 +1,12 @@
-# ECSE415-Project-G7
-Pipeline to detect, localize and track vehicles in image sequences
+# Classification
+Pipeline to extract images from datasets, preprocess images and train 
+SVM classifiers.
 
-#### Train model
-To train a model, we can run the python script: train.py in the following format
+All the code and experiemnts is available in the _classification.ipynb_ notebook.
 
-python3 train.py -p models/\<new model name\>.sav -y models/configs/\<hyperparameters config file name\>.yaml
+# **Tools**
 
-The argument p is the path where the model is to be saved in and the argument y is a yaml file with the desired parameter values, a default file "models/configs/svm_default.yaml" is provided.
+- _cross_validation.py_: method to perform 3-fold cross-validation
+- _preprocessing.py_: method to preprocess a list of images and return the feature vectors
+- _data.py_: methods to download and remove the datasets , and extracting positive and negative samples form the datasets
 
-If no arguments are provided, the default path of the saved model will be models/configs/svm_default.sav with the parameters in the yaml file: models/svm_default.yml.

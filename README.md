@@ -8,7 +8,9 @@ The list of project requirements and dependencies are located in `./requirements
 
 ## Dataset and Classification
 
-The dataset and classification code is located in `./classification/classification.ipynb` and can be run with Google Colab. The notbeook contains all the methods required to build datasets, perform preprocessing on images, perform cross-validation on SVM and random forest classifiers, and train and save SVM classifiers and associated hyper-parameters files. It also contains a bunch of hyper-parameter tuning experiments.
+The dataset and classification code is located in `./classification/classification.ipynb` and can be run with Google Colab. 
+
+The notebook contains all the methods required to download data, build datasets, perform preprocessing on images, perform cross-validation on SVM and random forest classifiers, and train and save SVM classifiers and associated hyper-parameters files. It also contains a bunch of hyper-parameter tuning experiments.
 
 ## Detection and Localization
 

@@ -2,7 +2,7 @@
 Pipeline to extract images from datasets, preprocess images and train 
 SVM classifiers.
 
-All the code and experiemnts is available in the _classification.ipynb_ notebook.
+All the code and experiments is available in the _classification.ipynb_ notebook.
 
 The _train.py_ file is not functional for the moment.
 

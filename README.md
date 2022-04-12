@@ -25,7 +25,7 @@ The tracking code is located in `./tracking/tracking.ipynb` and can both be run 
 
 ## Additional Scripts
 
-###Train model
+### Train model
 
 To train a model, we can run the python script: train.py in the following format
 

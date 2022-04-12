@@ -4,6 +4,8 @@ SVM classifiers.
 
 All the code and experiemnts is available in the _classification.ipynb_ notebook.
 
+The _train.py_ file is not functional for the moment.
+
 # **Tools**
 
 - _cross_validation.py_: method to perform 3-fold cross-validation

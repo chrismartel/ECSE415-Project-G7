@@ -22,3 +22,5 @@ The detection and classification code is located in `./detection/detection.ipynb
 ## Tracking
 
 The tracking code is located in `./tracking/tracking.ipynb` and can both be run with Google Colab.
+
+The annotated tracking videos are located at `./tracking/lucas-kanade-tracker.mp4` and `./tracking/alternate_tracker.mp4`.
